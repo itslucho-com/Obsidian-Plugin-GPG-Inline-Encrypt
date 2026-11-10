@@ -1,4 +1,4 @@
-import GpgEncryptPlugin from "main";
+import GpgEncryptPlugin from "../main";
 
 // Settings object
 export interface GpgEncryptSettings {

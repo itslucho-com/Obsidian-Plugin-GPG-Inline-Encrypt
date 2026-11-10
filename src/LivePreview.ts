@@ -3,7 +3,7 @@ import { App, editorLivePreviewField } from "obsidian";
 import type { PluginValue, } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 import { DecryptPreviewModal } from './DecryptPreviewModal';
-import GpgEncryptPlugin from 'main';
+import GpgEncryptPlugin from '../main';
 
 // widget that will replace the encrypted text
 export class EncryptedWidget extends WidgetType {
@@ -20,7 +20,7 @@ export class EncryptedWidget extends WidgetType {
         // Add new CSS class to div
         div.addClass('gpg-decrypt-div');
         // New div that is the decrypt button
-        let a = div.createEl('a');
+        const a = div.createEl('a');
         // Add new CSS class to a
         a.addClass('gpg-decrypt-a');
         // OnClickEvent in element a

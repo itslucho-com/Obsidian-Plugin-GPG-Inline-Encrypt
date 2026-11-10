@@ -34,7 +34,7 @@ export default function spawnGPG(settings: GpgEncryptSettings,  input: string | 
           // Create an empty args array
           args = [];
         }
-        let fullArgs: string[] = globalArgs.concat(args);
+        const fullArgs: string[] = globalArgs.concat(args);
 
         // Initial variables
         const buffers: Buffer[] = [];
@@ -56,7 +56,8 @@ export default function spawnGPG(settings: GpgEncryptSettings,  input: string | 
           console.log(command);
         }
         // Lazy require so the module still loads on mobile, where child_process is absent
-        const { spawn } = require("child_process");
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- must stay lazy, a top-level import breaks mobile
+        const { spawn } = require("child_process") as typeof import("child_process");
         const gpg = spawn(command, { shell: true });
     
         gpg.stdout.on("data", (buf: Buffer) => {
@@ -82,7 +83,7 @@ export default function spawnGPG(settings: GpgEncryptSettings,  input: string | 
           });
         });
     
-        gpg.on("error", (err: any) => {
+        gpg.on("error", (err: Error) => {
           if (settings.pgpAditionalCommandsConsole) {
             console.error(err);
           }
@@ -221,7 +222,7 @@ export async function gpgDecrypt(settings: GpgEncryptSettings, encryptedText:str
 // Function to decrypt an encrypted text using the native GPG executable
 async function nativeGpgDecrypt(settings: GpgEncryptSettings, encryptedText:string): Promise<GpgResult> {
   // List of Args before publicKeyIds
-  let args: string[] = ["--decrypt"].concat(AditionalArgs(settings));
+  const args: string[] = ["--decrypt"].concat(AditionalArgs(settings));
   // Build the executable and args
   const gpgResult: GpgResult = await spawnGPG(settings, encryptedText, args);
   // Check if error is null

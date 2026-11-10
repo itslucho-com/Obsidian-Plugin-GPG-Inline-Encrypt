@@ -1,9 +1,9 @@
-import { GpgSettingsTab } from 'src/SettingsTab';
-import { HotKeys } from 'src/HotKeys';
+import { GpgSettingsTab } from './src/SettingsTab';
+import { HotKeys } from './src/HotKeys';
 import { Plugin } from 'obsidian';
-import { GpgEncryptSettings, Settings } from 'src/Settings';
-import { livePreviewExtensionGpgEncrypt } from 'src/LivePreview';
-import { registerReadingModeProcessor } from 'src/ReadingModeProcessor';
+import { GpgEncryptSettings, Settings } from './src/Settings';
+import { livePreviewExtensionGpgEncrypt } from './src/LivePreview';
+import { registerReadingModeProcessor } from './src/ReadingModeProcessor';
 
 // My plugin PGP Encrypt
 export default class GpgEncryptPlugin extends Plugin {
@@ -18,7 +18,7 @@ export default class GpgEncryptPlugin extends Plugin {
 		// Add setting tab
 		this.addSettingTab(new GpgSettingsTab(this.app, this));
 		// Add hotkeys
-		let hotKeys: HotKeys = new HotKeys(this.app, this);
+		const hotKeys: HotKeys = new HotKeys(this.app, this);
 		this.addCommand(hotKeys.GpgEncryptInline);
 		this.addCommand(hotKeys.GpgEncryptDocument);
 		// Add Live Privew Extension GPG Encrypt

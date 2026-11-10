@@ -1,6 +1,6 @@
-import spawnGPG, { GpgResult, getListPublicKey } from 'src/gpg';
+import spawnGPG, { GpgResult, getListPublicKey } from './gpg';
 import { App, DropdownComponent, PluginSettingTab, Setting } from 'obsidian';
-import GpgEncryptPlugin from 'main';
+import GpgEncryptPlugin from '../main';
 import { Settings } from './Settings';
 
 // Enum of types of GPG executable path status
@@ -168,7 +168,8 @@ export class GpgSettingsTab extends PluginSettingTab {
 			// Abort the process
 			return;
 		// Lazy require so the settings tab still loads on mobile, where fs is absent
-		const fs = require('fs');
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- must stay lazy, a top-level import breaks mobile
+		const fs = require('fs') as typeof import('fs');
 		// Set settig variable pgpExecPath with new value
 		this.plugin.settings.pgpExecPath = value;
 		// Save settings with change
@@ -195,11 +196,11 @@ export class GpgSettingsTab extends PluginSettingTab {
 				return;
 			}
 			// Check GPG version in console
-			let gpgResult: GpgResult = await spawnGPG(this.plugin.settings, null, ["--logger-fd", "1", "--version"]);
+			const gpgResult: GpgResult = await spawnGPG(this.plugin.settings, null, ["--logger-fd", "1", "--version"]);
 			// Check if result is not null and is not an error
 			if(gpgResult.result && !gpgResult.error) {
 				// Get version string from result
-				let version: string = gpgResult.result.toString().trim();
+				const version: string = gpgResult.result.toString().trim();
 				// In case of words gpg or GnuPG are include in output
 				if(version.includes("gpg") && version.includes("GnuPG")) {
 					// Change the status to OK
@@ -278,7 +279,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 	// Function to refresh list of GPG Public Keys
 	private async RefreshGpgPublicKeyList() {
 		// Get list of GPG public Keys
-		let gpgPublicKeys: { keyID: string; userID: string }[] = await getListPublicKey(this.plugin.settings);
+		const gpgPublicKeys: { keyID: string; userID: string }[] = await getListPublicKey(this.plugin.settings);
 		// Iterate over each sub-element in list
 		while (this.gpgPublicKeysList.descEl.firstChild) {
 			// Remove each sub-element in list to clear list
@@ -291,9 +292,9 @@ export class GpgSettingsTab extends PluginSettingTab {
 		// Iterate over each public key
 		gpgPublicKeys.forEach((gpgPublicKey) => {
 			// A div is created for each element
-			let div : HTMLDivElement = this.gpgPublicKeysList.descEl.createDiv();
+			const div : HTMLDivElement = this.gpgPublicKeysList.descEl.createDiv();
 			// An element of type setting is created that will have the toggle
-			let item: Setting = new Setting(div);
+			const item: Setting = new Setting(div);
 			// The keyID is configured as Name
 			item.setName(gpgPublicKey.keyID);
 			// The userID is configured as a Desc
@@ -333,11 +334,11 @@ export class GpgSettingsTab extends PluginSettingTab {
 		this.gpgSignKeyId.setName("GPG key to sign");
 		this.gpgSignKeyId.setDesc("GPG key to sign the encrypted text");
 		// Show or Hide gpgSignKeyId settings according requireSign flag
-		requireSign ? this.gpgSignKeyId.settingEl.show() : this.gpgSignKeyId.settingEl.hide();
+		if (requireSign) this.gpgSignKeyId.settingEl.show(); else this.gpgSignKeyId.settingEl.hide();
 		// Check ir requireSign to populate DropDown
 		if (requireSign) {
 			// Get list of GPG public Keys
-			let gpgPublicKeys: { keyID: string; userID: string }[] = await getListPublicKey(this.plugin.settings);
+			const gpgPublicKeys: { keyID: string; userID: string }[] = await getListPublicKey(this.plugin.settings);
 			// Discard result if a newer call has already started
 			if (generation !== this.signListGeneration) return;
 			// Clear all DropDown items
@@ -383,9 +384,9 @@ export class GpgSettingsTab extends PluginSettingTab {
 		this.gpgAditionalCommandsAfter.setDesc("Enter the commands to be executed after running the gpg commands (Note: If you need to nest more than one command use &&, DO NOT include closing characters && as these will be added automatically)");
 		this.gpgAditionalCommandsConsole.setDesc("Print whole command in the Obsidian Developer Console to debug (cmd+option+i Mac - ctrl+shift+i Windows)");
 		// Show or Hide gpgAditionalCommands settings according aditionalCommands flag
-		aditionalCommands ? this.gpgAditionalCommandsBefore.settingEl.show() : this.gpgAditionalCommandsBefore.settingEl.hide();
-		aditionalCommands ? this.gpgAditionalCommandsAfter.settingEl.show() : this.gpgAditionalCommandsAfter.settingEl.hide();
-		aditionalCommands ? this.gpgAditionalCommandsConsole.settingEl.show() : this.gpgAditionalCommandsConsole.settingEl.hide();
+		for (const setting of [this.gpgAditionalCommandsBefore, this.gpgAditionalCommandsAfter, this.gpgAditionalCommandsConsole]) {
+			if (aditionalCommands) setting.settingEl.show(); else setting.settingEl.hide();
+		}
 		// Added the text inputs
 		this.gpgAditionalCommandsBefore.addText(text => text
 			.setPlaceholder('command')
@@ -561,10 +562,10 @@ export class GpgSettingsTab extends PluginSettingTab {
 				infoEl.className = "text-color-green";
 				infoEl.setText("✅ Public key loaded: " + keys.map((k) => k.userID + " (" + k.keyID + ")").join(", "));
 			}
-		} catch (ex: any) {
+		} catch (ex) {
 			const errEl = this.openpgpKeyInfoEl.createDiv();
 			errEl.className = "text-color-red";
-			errEl.setText("❌ Error reading public key: " + ex.message);
+			errEl.setText("❌ Error reading public key: " + (ex instanceof Error ? ex.message : String(ex)));
 		}
 	}
 }

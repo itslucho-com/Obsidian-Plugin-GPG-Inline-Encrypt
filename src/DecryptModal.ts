@@ -1,5 +1,5 @@
 import { App, Editor, EditorPosition, MarkdownView, Modal, Notice, Setting } from "obsidian";
-import GpgEncryptPlugin from "main";
+import GpgEncryptPlugin from "../main";
 
 // Decrypt modal (Works for inline and document encryption)
 export class DecryptModal extends Modal {
@@ -18,19 +18,19 @@ export class DecryptModal extends Modal {
         // Check if extra info is not null nor empty
         if (this.extraInfo && this.extraInfo.trim() != "") {
             // P that shows extra info in decrypt process
-            let extraInfoDiv: HTMLDivElement = contentEl.createEl("div");
+            const extraInfoDiv: HTMLDivElement = contentEl.createEl("div");
             extraInfoDiv.className = "gpg-code-sign-ok";
             this.organizeOutText(this.extraInfo, extraInfoDiv);
         }
         // Text p is created
         contentEl.createEl("p").setText("Plain text preview of the decrypted message:");
         // Textarea that contains plain text decrypted
-        let textArea: HTMLTextAreaElement = contentEl.createEl("textarea");
+        const textArea: HTMLTextAreaElement = contentEl.createEl("textarea");
         textArea.readOnly = true;
         textArea.setText(this.plainText);
         textArea.className = "gpg-plain-text-area";
         // Button to copy to clipboard
-        let buttons: Setting = new Setting(contentEl)
+        const buttons: Setting = new Setting(contentEl)
         .addButton((btn) => btn.setButtonText("Copy Plain Text").onClick(async() => {
             // Copy plain message to clipboard
             navigator.clipboard.writeText(this.plainText);
@@ -111,11 +111,11 @@ export class DecryptModal extends Modal {
     }
 
     // Organize out text into code elements
-    organizeOutText(outText: string, divCode: any) {
+    organizeOutText(outText: string, divCode: HTMLElement) {
         // Flag to check if is first line
         let isFirstLine: boolean = true;
         // Split lines by return
-        let lines: string[] = outText.split("\n");
+        const lines: string[] = outText.split("\n");
         // Iterate line by line
         lines.forEach((line) => {
             // Check if is not a first line

@@ -4,7 +4,7 @@ import { DecryptModal } from "./DecryptModal";
 import { GpgResult, gpgDecrypt } from "./gpg";
 import { base64ToUtf8, getPassphrase, setCachedPassphrase } from "./openpgp";
 import { PassphraseModal } from "./PassphraseModal";
-import GpgEncryptPlugin from "main";
+import GpgEncryptPlugin from "../main";
 
 // Decrypt Preview modal (Works for inline and document encryption)
 export class DecryptPreviewModal extends Modal {
@@ -18,7 +18,7 @@ export class DecryptPreviewModal extends Modal {
 	constructor(app: App, encryptedMessageBase64: string, public plugin: GpgEncryptPlugin, public from: number, public to: number) {
 		super(app);
         // Remove scape characters
-        let encryptedMessageBase64WithoutScapeKeys = encryptedMessageBase64.substring(GPG_INLINE_ENCRYPT_PREFIX.length + 1, encryptedMessageBase64.length);
+        const encryptedMessageBase64WithoutScapeKeys = encryptedMessageBase64.substring(GPG_INLINE_ENCRYPT_PREFIX.length + 1, encryptedMessageBase64.length);
         // Assing encryptedMessageBase64WithoutScapeKeys to encryptedMessageBase64
         this.encryptedMessageBase64 = encryptedMessageBase64WithoutScapeKeys;
         // Decode base64 to the armored message (browser-safe for openpgpjs/mobile, Buffer for native)
@@ -40,7 +40,7 @@ export class DecryptPreviewModal extends Modal {
         const divCode: HTMLDivElement = contentEl.createEl("div");
         divCode.className = "gpg-code-preview";
         // Split encrypted message by returns
-        let encryptedMessageSplited = this.encryptedMessage.split("\n");
+        const encryptedMessageSplited = this.encryptedMessage.split("\n");
         // Max number of rows in preview screen
         const max_number_rows: number = 20;
         // Flag to detect if middle dots were printed
@@ -73,7 +73,7 @@ export class DecryptPreviewModal extends Modal {
             divCode.createEl("br");
         }
         // Button to decript text
-        let buttonName: string = "Decrypt";
+        const buttonName: string = "Decrypt";
         new Setting(contentEl)
         .addButton((btn) => btn.setButtonText("Copy encrypted text").onClick(async() => {
             // Copy encrypted message to clipboard
@@ -102,7 +102,7 @@ export class DecryptPreviewModal extends Modal {
                 }
             }
             // Send Decrypt command
-            let decryptedTextResult: GpgResult = await gpgDecrypt(this.plugin.settings, this.encryptedMessage, passphrase);
+            const decryptedTextResult: GpgResult = await gpgDecrypt(this.plugin.settings, this.encryptedMessage, passphrase);
             // Check if result contains data
             if (decryptedTextResult.result) {
                 // Cache the passphrase after a successful decrypt (openpgpjs only)

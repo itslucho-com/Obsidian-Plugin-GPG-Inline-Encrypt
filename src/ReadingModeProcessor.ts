@@ -1,7 +1,7 @@
 import { App, MarkdownPostProcessorContext } from "obsidian";
 import { GPG_INLINE_ENCRYPT_PREFIX } from "./EncryptModal";
 import { DecryptPreviewModal } from "./DecryptPreviewModal";
-import GpgEncryptPlugin from "main";
+import GpgEncryptPlugin from "../main";
 
 // Reading Mode Post Processor for GPG Encrypted Text
 export const registerReadingModeProcessor = (app: App, plugin: GpgEncryptPlugin) => {

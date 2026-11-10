@@ -33,6 +33,11 @@ export function getPassphrase(settings: GpgEncryptSettings): string | null {
   return null;
 }
 
+// Readable message from any thrown value (OpenPGP.js throws Error, but be defensive)
+function errorMessage(ex: unknown): string {
+  return ex instanceof Error && ex.message ? ex.message : String(ex);
+}
+
 // Browser-safe base64 helpers (Buffer is not available on mobile)
 export function utf8ToBase64(str: string): string {
   const bytes = new TextEncoder().encode(str);
@@ -101,8 +106,8 @@ export async function gpgEncrypt(settings: GpgEncryptSettings, plainText: string
     }
     const encrypted = await encrypt(encryptOptions) as string;
     return { result: encrypted, error: undefined };
-  } catch (ex: any) {
-    return { result: undefined, error: new Error("❌ Encryption failed: " + (ex.message || ex)) };
+  } catch (ex) {
+    return { result: undefined, error: new Error("❌ Encryption failed: " + errorMessage(ex)) };
   }
 }
 
@@ -123,7 +128,7 @@ export async function gpgDecrypt(settings: GpgEncryptSettings, encryptedText: st
     if (settings.pgpPublicKeyArmored && settings.pgpPublicKeyArmored.trim() !== "") {
       try {
         decryptOptions.verificationKeys = await readKey({ armoredKey: settings.pgpPublicKeyArmored });
-      } catch (e) {
+      } catch {
         // Ignore verification key errors; decryption can still proceed
       }
     }
@@ -135,12 +140,12 @@ export async function gpgDecrypt(settings: GpgEncryptSettings, encryptedText: st
       try {
         await decrypted.signatures[0].verified;
         extraInfo = "✅ Signature verified";
-      } catch (e) {
+      } catch {
         extraInfo = "⚠️ Signature could not be verified";
       }
     }
     return { result: plainText, error: extraInfo ? new Error(extraInfo) : undefined };
-  } catch (ex: any) {
-    return { result: undefined, error: new Error("❌ Decryption failed: " + (ex.message || ex)) };
+  } catch (ex) {
+    return { result: undefined, error: new Error("❌ Decryption failed: " + errorMessage(ex)) };
   }
 }

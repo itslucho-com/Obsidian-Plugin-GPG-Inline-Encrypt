@@ -1,6 +1,6 @@
 import { EncryptModal, EncryptModalMode } from "./EncryptModal";
 import { App, Command, Editor, MarkdownView } from "obsidian";
-import GpgEncryptPlugin from 'main';
+import GpgEncryptPlugin from '../main';
 
 // HotKeys class
 export class HotKeys {
