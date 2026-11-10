@@ -2,6 +2,7 @@ import spawnGPG, { GpgResult, getListPublicKey } from './gpg';
 import { App, DropdownComponent, PluginSettingTab, SecretComponent, Setting } from 'obsidian';
 import GpgEncryptPlugin from '../main';
 import { Settings } from './Settings';
+import { detectGpgPath, fileExists, getDeviceGpgPath, resolveGpgPath, setDeviceGpgPath } from './GpgPath';
 
 // Enum of types of GPG executable path status
 enum GpgExecPathStatus {
@@ -76,12 +77,14 @@ export class GpgSettingsTab extends PluginSettingTab {
 		// ---------- GPG executable setting ----------
 		this.gpgExecPath = new Setting(containerEl)
 			.setName('GPG executable')
-			.setDesc('Path to GPG executable')
+			.setDesc('Path to the GPG executable on this device. Leave empty to detect it automatically. It is saved only on this device, so each computer syncing this vault can use its own path.')
 			.addText(text => text
-				.setPlaceholder('gpg')
-				.setValue(this.plugin.settings.pgpExecPath)
+				.setPlaceholder(detectGpgPath() || 'Path to gpg')
+				.setValue(getDeviceGpgPath(this.app))
 				.onChange(async (value: string) => {
-					await this.checkGpgPath(value);
+					// Saved in this device's local storage, never in the synced data.json
+					setDeviceGpgPath(this.app, value);
+					await this.checkGpgPath();
 				}));
 		// Div to show GPG Path status
 		this.gpgExecPathStatus = this.gpgExecPath.descEl.createDiv();
@@ -91,7 +94,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 		this.gpgPublicKeysList = new Setting(containerEl)
 			.setName("Public keys")
 		// Run by first time checkGpgPath function
-		this.checkGpgPath(this.plugin.settings.pgpExecPath);
+		this.checkGpgPath();
 		// ---------- List of GPG Public Keys ----------
 
 		// ---------- Always Trust ----------
@@ -161,19 +164,17 @@ export class GpgSettingsTab extends PluginSettingTab {
 		// ---------- Aditional Commands ----------
 	}
 
-	// Function to check if GPG Path exits
-	private async checkGpgPath(value: string) {
+	// Function to resolve this device's GPG path (user's choice or auto-detected) and check it
+	private async checkGpgPath() {
 		// Check if pgp Library is openpgpjs
 		if (this.plugin.settings.pgpLibrary == "openpgpjs")
 			// Abort the process
 			return;
-		// Lazy require so the settings tab still loads on mobile, where fs is absent
-		// eslint-disable-next-line @typescript-eslint/no-require-imports -- must stay lazy, a top-level import breaks mobile
-		const fs = require('fs') as typeof import('fs');
-		// Set settig variable pgpExecPath with new value
+		// Path set on this device, otherwise the one found in the usual locations
+		const value: string = resolveGpgPath(this.app);
+		const pathOrigin: string = getDeviceGpgPath(this.app) ? "set on this device" : "detected automatically";
+		// Use it for every GPG command (runtime only, not saved in data.json)
 		this.plugin.settings.pgpExecPath = value;
-		// Save settings with change
-		await new Settings(this.plugin).saveSettings();
 		// Hide list of public GPG Keys
 		this.gpgPublicKeysList.settingEl.hide();
 		// Start with Loading status while real one is calculated
@@ -182,7 +183,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 		try
 		{
 			// Check if file doesn not exist
-			if (!fs.existsSync(value)) {
+			if (!fileExists(value)) {
 				// Change the status to File Not Found
 				this.changeGpgPathStatus(GpgExecPathStatus.FILE_NOT_FOUND);
 				// End this check process
@@ -203,8 +204,8 @@ export class GpgSettingsTab extends PluginSettingTab {
 				const version: string = gpgResult.result.toString().trim();
 				// In case of words gpg or GnuPG are include in output
 				if(version.includes("gpg") && version.includes("GnuPG")) {
-					// Change the status to OK
-					this.changeGpgPathStatus(GpgExecPathStatus.OK);
+					// Change the status to OK, showing which executable is used
+					this.changeGpgPathStatus(GpgExecPathStatus.OK, `${value} (${pathOrigin})`);
 					// Refresh GPG public key list
 					await this.RefreshGpgPublicKeyList();
 					// End this check process
@@ -253,9 +254,9 @@ export class GpgSettingsTab extends PluginSettingTab {
 	}
 
 	// Function to change GPG executable path status
-	private changeGpgPathStatus(status: GpgExecPathStatus) {
+	private changeGpgPathStatus(status: GpgExecPathStatus, detail?: string) {
 		// Change text status with new one
-		this.gpgExecPathStatus.setText(`Status: ${status}`);
+		this.gpgExecPathStatus.setText(detail ? `Status: ${status} — ${detail}` : `Status: ${status}`);
 		// Swich to identify status style
 		switch (status) {
 			// In case of Loading status
@@ -397,7 +398,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 				// Save settings with change
 				await new Settings(this.plugin).saveSettings();
 				// Run a script to check gpg path with pgpAditionalCommandsBefore
-				await this.checkGpgPath(this.plugin.settings.pgpExecPath);
+				await this.checkGpgPath();
 			}));
 		this.gpgAditionalCommandsAfter.addText(text => text
 			.setPlaceholder('command')
@@ -408,7 +409,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 				// Save settings with change
 				await new Settings(this.plugin).saveSettings();
 				// Run a script to check gpg path with pgpAditionalCommandsAfter
-				await this.checkGpgPath(this.plugin.settings.pgpExecPath);
+				await this.checkGpgPath();
 			}));
 		this.gpgAditionalCommandsConsole.addToggle((toggle) => {
 			// Toggle component default value is false
@@ -463,7 +464,7 @@ export class GpgSettingsTab extends PluginSettingTab {
 			// Repopulate sign key dropdown with native GPG keys
 			this.RefreshListSign(this.plugin.settings.pgpSignPublicKeyId != "0");
 
-			this.checkGpgPath(this.plugin.settings.pgpExecPath);
+			this.checkGpgPath();
 		}
 
 		// Call method to show/hide aditional commands

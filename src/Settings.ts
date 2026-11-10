@@ -1,9 +1,11 @@
 import { Notice } from "obsidian";
 import type { SecretStorage } from "obsidian";
 import GpgEncryptPlugin from "../main";
+import { adoptSharedGpgPath, resolveGpgPath } from "./GpgPath";
 
 // Settings object
 export interface GpgEncryptSettings {
+	// GPG executable for this device, resolved at runtime (see GpgPath.ts); never persisted in data.json
 	pgpExecPath: string;
 	pgpSignPublicKeyId: string
     pgpAlwaysTrust: boolean,
@@ -29,7 +31,7 @@ const MIGRATED_PASSPHRASE_SECRET = "gpg-encrypt-passphrase";
 
 // Default settings values
 const DEFAULT_SETTINGS: GpgEncryptSettings = {
-    pgpExecPath: getDefaultExecPath(),
+    pgpExecPath: "",
     pgpSignPublicKeyId: "0",
     pgpAlwaysTrust: false,
     pgpDefaultEncryptKeys: [],
@@ -58,8 +60,15 @@ export class Settings {
 
     // Load Settings from Plugin Data
     async loadSettings() {
-        this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS, await this.plugin.loadData());
+        const stored = (await this.plugin.loadData()) as Partial<StoredSettings> | null;
+        this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS, stored);
+        // Versions <= 1.2.0 kept a single GPG path in data.json, shared by every device syncing the vault
+        const sharedExecPath = typeof stored?.pgpExecPath === "string" ? stored.pgpExecPath : undefined;
+        if (sharedExecPath !== undefined) adoptSharedGpgPath(this.plugin.app, sharedExecPath);
+        this.plugin.settings.pgpExecPath = resolveGpgPath(this.plugin.app);
         await this.migratePlainTextPassphrase();
+        // Rewrite data.json once without the shared path (saveSettings never writes it)
+        if (sharedExecPath !== undefined) await this.saveSettings();
     }
 
     // Move a passphrase saved in plain text by versions <= 1.2.0 into Obsidian's Keychain
@@ -89,7 +98,10 @@ export class Settings {
 
     // Save Settings to Plugin Data
     async saveSettings() {
-        await this.plugin.saveData(this.plugin.settings);
+        // The GPG path belongs to this device (local storage), so it never goes into the synced data.json
+        const persisted: Partial<StoredSettings> = { ...this.plugin.settings };
+        delete persisted.pgpExecPath;
+        await this.plugin.saveData(persisted);
     }
 }
 
@@ -99,28 +111,5 @@ function findSecretName(secrets: SecretStorage, value: string): string {
         const name = i === 1 ? MIGRATED_PASSPHRASE_SECRET : `${MIGRATED_PASSPHRASE_SECRET}-${i}`;
         const existing = secrets.getSecret(name);
         if (existing === null || existing === value) return name;
-    }
-}
-
-// Get Default Exec Path in base on platform name
-function getDefaultExecPath(): string {
-    // On mobile there is no Node process; return empty (native GPG is unavailable there)
-    if (typeof process === "undefined" || !process.platform) {
-        return "";
-    }
-    // Check platform name
-    switch (process.platform) {
-        // In case of Windows OS
-        case "win32":
-            return "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe";
-        // In case of MacOS
-        case "darwin":
-            return "/usr/local/bin/gpg";
-        // In case of Linux
-        case "linux":
-            return "/usr/bin/gpg";
-        // In default value return empty
-        default:
-            return "";
     }
 }
