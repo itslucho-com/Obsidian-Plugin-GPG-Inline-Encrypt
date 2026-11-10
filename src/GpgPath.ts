@@ -4,15 +4,16 @@ import type { App } from "obsidian";
 // device's local storage (app.saveLocalStorage) instead of data.json, which is synced with the vault.
 const DEVICE_GPG_PATH_KEY = "gpg-encrypt-exec-path";
 
-// Usual install locations, in lookup order, for each platform
+// Usual install locations, in lookup order, for each platform. The first one is the default of
+// versions <= 1.2.0, so whoever relied on it keeps the same executable after upgrading.
 const GPG_PATH_CANDIDATES: Record<string, string[]> = {
     win32: [
-        "C:\\Program Files\\GnuPG\\bin\\gpg.exe",
         "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe",
+        "C:\\Program Files\\GnuPG\\bin\\gpg.exe",
     ],
     darwin: [
-        "/opt/homebrew/bin/gpg",
         "/usr/local/bin/gpg",
+        "/opt/homebrew/bin/gpg",
         "/usr/local/MacGPG2/bin/gpg",
         "/opt/local/bin/gpg",
     ],
