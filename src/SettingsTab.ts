@@ -1,5 +1,5 @@
 import spawnGPG, { GpgResult, getListPublicKey } from './gpg';
-import { App, DropdownComponent, PluginSettingTab, Setting } from 'obsidian';
+import { App, DropdownComponent, PluginSettingTab, SecretComponent, Setting } from 'obsidian';
 import GpgEncryptPlugin from '../main';
 import { Settings } from './Settings';
 
@@ -503,19 +503,16 @@ export class GpgSettingsTab extends PluginSettingTab {
 			await new Settings(this.plugin).saveSettings();
 		});
 
-		// ---------- Passphrase (optional) ----------
+		// ---------- Passphrase (optional, kept in Obsidian's Keychain) ----------
 		new Setting(el)
 			.setName("Private Key Passphrase (optional)")
-			.setDesc("Save passphrase to disk for auto-decrypt. Leave blank to be prompted each time (recommended).")
-			.addText((text) => {
-				text.setPlaceholder("leave blank to prompt")
-					.setValue(this.plugin.settings.pgpPassphrase || "")
-					.onChange(async (value: string) => {
-						this.plugin.settings.pgpPassphrase = value;
-						await new Settings(this.plugin).saveSettings();
-					});
-				text.inputEl.type = "password";
-			});
+			.setDesc("Pick or create a secret in Obsidian's Keychain with your passphrase to decrypt without being prompted. Leave empty to be prompted each time (recommended). Only the secret's name is saved in data.json, never the passphrase.")
+			.addComponent((componentEl) => new SecretComponent(this.app, componentEl)
+				.setValue(this.plugin.settings.pgpPassphraseSecret)
+				.onChange(async (value: string | null) => {
+					this.plugin.settings.pgpPassphraseSecret = value ?? "";
+					await new Settings(this.plugin).saveSettings();
+				}));
 
 		// ---------- Passphrase cache duration ----------
 		new Setting(el)

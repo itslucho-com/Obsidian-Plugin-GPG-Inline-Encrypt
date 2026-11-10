@@ -1,5 +1,6 @@
 import { readKey, readPrivateKey, decryptKey, createMessage, encrypt, readMessage, decrypt } from "openpgp";
 import type { EncryptOptions, DecryptOptions } from "openpgp";
+import type { SecretStorage } from "obsidian";
 import { GpgEncryptSettings } from "./Settings";
 import type { GpgResult } from "./gpg";
 
@@ -23,12 +24,13 @@ export function getCachedPassphrase(): string | null {
   return null;
 }
 
-// Resolve a passphrase from the cache or from the persisted setting (if any)
-export function getPassphrase(settings: GpgEncryptSettings): string | null {
+// Resolve a passphrase from the in-memory cache or from the secret selected in Obsidian's Keychain (if any)
+export function getPassphrase(settings: GpgEncryptSettings, secrets: Pick<SecretStorage, "getSecret">): string | null {
   const cached = getCachedPassphrase();
   if (cached) return cached;
-  if (settings.pgpPassphrase && settings.pgpPassphrase.trim() !== "") {
-    return settings.pgpPassphrase;
+  if (settings.pgpPassphraseSecret) {
+    const saved = secrets.getSecret(settings.pgpPassphraseSecret);
+    if (saved && saved.trim() !== "") return saved;
   }
   return null;
 }
@@ -101,7 +103,7 @@ export async function gpgEncrypt(settings: GpgEncryptSettings, plainText: string
       format: "armored"
     };
     if (signPublicKeyId !== "0" && settings.pgpPrivateKeyArmored && settings.pgpPrivateKeyArmored.trim() !== "") {
-      const pp = passphrase != null ? passphrase : getPassphrase(settings);
+      const pp = passphrase != null ? passphrase : getCachedPassphrase();
       encryptOptions.signingKeys = await decryptPrivateKey(settings, pp);
     }
     const encrypted = await encrypt(encryptOptions) as string;
@@ -117,7 +119,7 @@ export async function gpgDecrypt(settings: GpgEncryptSettings, encryptedText: st
     if (!settings.pgpPrivateKeyArmored || settings.pgpPrivateKeyArmored.trim() === "") {
       return { result: undefined, error: new Error("❌ No private key configured.") };
     }
-    const pp = passphrase != null ? passphrase : getPassphrase(settings);
+    const pp = passphrase != null ? passphrase : getCachedPassphrase();
     const privateKey = await decryptPrivateKey(settings, pp);
     const message = await readMessage({ armoredMessage: encryptedText });
     const decryptOptions: DecryptOptions = {

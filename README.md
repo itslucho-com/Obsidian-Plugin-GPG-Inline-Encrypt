@@ -33,11 +33,11 @@ When `openpgpjs` is selected, the settings show:
 
 1. **Public Key (Armored)** — paste your ASCII-armored public key (used for encryption).
 2. **Private Key (Armored)** — paste your ASCII-armored private key (used for decryption, stored in the plugin's local data).
-3. **Private Key Passphrase (optional)** — leave blank to be prompted for the passphrase at decrypt time (recommended); or save it to be decrypted automatically.
+3. **Private Key Passphrase (optional)** — leave empty to be prompted for the passphrase at decrypt time (recommended); or pick (or create) a secret in Obsidian's Keychain that holds it, to decrypt automatically. The passphrase is kept in the Keychain (*Settings → Keychain*), which is local to this device and lives outside the vault files: `data.json` only stores the secret's name. Requires Obsidian 1.11.4 or later.
 4. **Passphrase cache duration (minutes)** — how long an entered passphrase is kept in memory before being required again.
 5. **Sign when encrypting** — also sign the text with your private key.
 
-> Note: in `openpgpjs` mode the private key is stored in the plugin's local data (`data.json`). Only enable the saved passphrase if you understand that it is written to disk in plain text.
+> Note: in `openpgpjs` mode the private key is stored in the plugin's local data (`data.json`), protected by its own passphrase. The passphrase is never written to `data.json`. If you saved one with version 1.2.0 or earlier, it is moved automatically to the Keychain as `gpg-encrypt-passphrase` and removed from `data.json` the first time the plugin loads.
 
 ## Encrypt some text
 

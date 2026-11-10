@@ -85,11 +85,11 @@ export class DecryptPreviewModal extends Modal {
             btn.setIcon("loader")
             // Disable button before encryption
             btn.setDisabled(true);
-            // For openpgpjs, obtain the passphrase (from cache/settings, or prompt the user)
+            // For openpgpjs, obtain the passphrase (from cache/Keychain, or prompt the user)
             let passphrase: string | null = null;
             let closedForPrompt: boolean = false;
             if (this.plugin.settings.pgpLibrary === "openpgpjs") {
-                passphrase = getPassphrase(this.plugin.settings);
+                passphrase = getPassphrase(this.plugin.settings, this.app.secretStorage);
                 // If no passphrase is available, close this modal and prompt for one
                 if (!passphrase) {
                     this.close();

@@ -156,7 +156,7 @@ export class EncryptModal extends Modal {
         // For openpgpjs with signing enabled, resolve the passphrase before encrypting
         let passphrase: string | null = null;
         if (this.plugin.settings.pgpLibrary === "openpgpjs" && this.plugin.settings.pgpSignPublicKeyId !== "0") {
-            passphrase = getPassphrase(this.plugin.settings);
+            passphrase = getPassphrase(this.plugin.settings, this.app.secretStorage);
             if (!passphrase) {
                 passphrase = await PassphraseModal.prompt(this.app);
                 // User cancelled the passphrase prompt
